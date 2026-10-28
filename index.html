@@ -1,0 +1,1108 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Equipos Dinámicos</title>
+<style>
+  :root {
+    --bg: #eef1f5;
+    --panel: #ffffff;
+    --border: #d6dbe2;
+    --text: #1d2430;
+    --muted: #5f6b7a;
+    --accent: #0a64c8;
+    --accent-soft: #e3effc;
+    --folder: #f3c34a;
+    --folder-dark: #dba627;
+    --ok: #1f8a4c;
+    --ok-soft: #e2f4ea;
+    --warn: #b26a00;
+    --warn-soft: #fdf0dc;
+    --part-stroke: #34495e;
+    --part-fill: #c9d3de;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #161a20; --panel: #1f252d; --border: #333c47; --text: #e6eaf0; --muted: #98a3b1;
+      --accent: #5aa6f5; --accent-soft: #1d3247; --ok: #57c486; --ok-soft: #1b3326;
+      --warn: #f0ad4e; --warn-soft: #3a2d18; --part-stroke: #b9c6d3; --part-fill: #3a4654;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Segoe UI", system-ui, sans-serif; background: var(--bg); color: var(--text); }
+  header {
+    background: var(--panel); border-bottom: 1px solid var(--border);
+    padding: 10px 16px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+    position: sticky; top: 0; z-index: 5;
+  }
+  .crumbs { display: flex; align-items: center; gap: 6px; font-size: 15px; flex: 1; min-width: 200px; }
+  .crumbs a { color: var(--accent); text-decoration: none; }
+  .crumbs a:hover { text-decoration: underline; }
+  .crumbs span.sep { color: var(--muted); }
+  input, select, textarea {
+    font: inherit; padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--panel); color: var(--text);
+  }
+  input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  main { padding: 16px 16px 96px; max-width: 1200px; margin: 0 auto; }
+  button {
+    font: inherit; cursor: pointer; border-radius: 6px; padding: 8px 14px;
+    border: 1px solid var(--border); background: var(--panel); color: var(--text);
+  }
+  button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  button:hover { filter: brightness(0.96); }
+  a { color: var(--accent); }
+
+  /* ---------- Carpetas ---------- */
+  .toolbar { display: flex; gap: 8px; flex-wrap: wrap; }
+  .toolbar input { width: 220px; max-width: 100%; }
+  .count { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 6px; }
+  .folder {
+    display: flex; flex-direction: column; align-items: center; text-align: center;
+    padding: 10px 6px; border-radius: 6px; cursor: pointer; border: 1px solid transparent;
+    user-select: none;
+  }
+  .folder:hover, .folder:focus { background: var(--accent-soft); border-color: var(--accent); outline: none; }
+  .folder svg { width: 72px; height: 58px; }
+  .folder .tag { font-weight: 600; margin-top: 4px; word-break: break-word; }
+  .folder .meta { font-size: 12px; color: var(--muted); line-height: 1.35; }
+  .bar { width: 70%; height: 4px; background: var(--border); border-radius: 2px; margin-top: 5px; overflow: hidden; }
+  .bar i { display: block; height: 100%; background: var(--ok); }
+  .empty { color: var(--muted); padding: 40px; text-align: center; }
+
+  /* ---------- Equipo ---------- */
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+  .eq-head { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; }
+  .eq-head svg { width: 64px; height: 52px; flex: none; }
+  .eq-head h1 { margin: 0; font-size: 22px; }
+  .eq-head .desc { color: var(--muted); font-size: 14px; margin-top: 2px; }
+  .info { display: flex; gap: 22px; flex-wrap: wrap; margin-top: 8px; }
+  .info div { font-size: 12px; color: var(--muted); }
+  .info b { display: block; font-size: 15px; color: var(--text); font-weight: 600; }
+  .info input { width: 110px; padding: 3px 6px; font-size: 14px; }
+  .totals { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 16px; }
+  .stat { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+  .stat .lbl { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  .stat .val { font-size: 24px; font-weight: 600; margin-top: 2px; }
+  .stat .sub { font-size: 12px; color: var(--muted); }
+  h2 { font-size: 16px; margin: 0 0 10px; }
+  .parts { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+  .part {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 12px;
+    cursor: pointer; display: flex; flex-direction: column; gap: 8px; transition: transform .1s, border-color .1s;
+  }
+  .part:hover, .part:focus { border-color: var(--accent); transform: translateY(-2px); outline: none; }
+  .part .img { height: 120px; display: flex; align-items: center; justify-content: center; background: var(--bg); border-radius: 8px; }
+  .part .img svg { height: 100px; width: 100%; }
+  .part .name { font-weight: 600; display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+  .part .hrs { font-size: 13px; color: var(--muted); }
+  .badge { font-size: 11px; padding: 2px 8px; border-radius: 99px; font-weight: 600; white-space: nowrap; }
+  .badge.ok { background: var(--ok-soft); color: var(--ok); }
+  .badge.pend { background: var(--warn-soft); color: var(--warn); }
+
+  /* ---------- Parte ---------- */
+  .part-detail { display: grid; grid-template-columns: minmax(220px, 320px) 1fr; gap: 16px; }
+  .part-detail .big { background: var(--bg); border-radius: 10px; display: flex; align-items: center; justify-content: center; min-height: 280px; }
+  .part-detail .big svg { width: 90%; height: 260px; }
+  .form { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; align-content: start; }
+  .form label { font-size: 13px; color: var(--muted); display: flex; flex-direction: column; gap: 4px; }
+  .form input { width: 100%; }
+  .form .full { grid-column: 1 / -1; }
+  .section-title { grid-column: 1 / -1; font-weight: 600; font-size: 14px; border-bottom: 1px solid var(--border); padding-bottom: 4px; margin-top: 6px; }
+  .hint { font-weight: 400; color: var(--muted); font-size: 12px; }
+  textarea { min-height: 60px; resize: vertical; }
+  .calc { grid-column: 1 / -1; background: var(--bg); border-radius: 8px; padding: 12px; font-size: 14px; }
+  .calc .row { display: flex; justify-content: space-between; gap: 10px; padding: 3px 0; }
+  .calc .final { border-top: 1px solid var(--border); margin-top: 6px; padding-top: 8px; font-size: 18px; font-weight: 700; color: var(--accent); }
+  .actions { grid-column: 1 / -1; display: flex; gap: 8px; justify-content: flex-end; }
+  .nov-wrap { margin-top: 16px; overflow-x: auto; }
+  table.nov { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.nov th, table.nov td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  table.nov th { color: var(--muted); font-weight: 600; white-space: nowrap; }
+  table.nov td.n { text-align: right; white-space: nowrap; }
+  table.nov select { padding: 3px 4px; font-size: 12px; }
+  .kind { font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 4px; background: var(--accent-soft); color: var(--accent); }
+  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--ok); color: #fff; padding: 10px 18px; border-radius: 8px; opacity: 0; transition: opacity .2s; pointer-events: none; }
+  .toast.show { opacity: 1; }
+
+  /* ---------- Tareas ---------- */
+  :root { --st-pend: #9aa5b1; --st-curso: #e0a100; --st-espera: #d64545; --st-ok: #1f9d55; }
+  .eq-grid { display: grid; grid-template-columns: 1fr 340px; gap: 16px; align-items: start; }
+  .side { display: flex; flex-direction: column; gap: 16px; }
+  .tasks { list-style: none; margin: 0; padding: 0; }
+  .tasks li { display: flex; align-items: center; gap: 10px; padding: 8px 6px; border-bottom: 1px solid var(--border); cursor: pointer; border-radius: 6px; }
+  .tasks li:last-child { border-bottom: 0; }
+  .tasks li:hover { background: var(--accent-soft); }
+  .tasks .tname { flex: 1; font-weight: 500; }
+  .tasks .tmeta { font-size: 12px; color: var(--muted); white-space: nowrap; }
+  .dot { width: 18px; height: 18px; border-radius: 50%; border: 2px solid rgba(0,0,0,.15); flex: none; cursor: pointer; padding: 0; transition: transform .1s; }
+  .dot:hover { transform: scale(1.2); }
+  .dot.pend { background: var(--st-pend); } .dot.curso { background: var(--st-curso); }
+  .dot.espera { background: var(--st-espera); } .dot.ok { background: var(--st-ok); }
+  .legend { display: flex; flex-wrap: wrap; gap: 10px; font-size: 12px; color: var(--muted); margin-top: 10px; }
+  .legend span { display: flex; align-items: center; gap: 4px; }
+  .legend .dot { width: 10px; height: 10px; border-width: 1px; cursor: default; }
+  .fab {
+    position: fixed; right: 24px; bottom: 24px; width: 58px; height: 58px; border-radius: 50%;
+    background: var(--accent); color: #fff; border: 0; font-size: 32px; line-height: 1; padding: 0;
+    box-shadow: 0 6px 18px rgba(0,0,0,.25); z-index: 8;
+  }
+  .row-inline { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .cot .row { display: flex; justify-content: space-between; gap: 10px; padding: 4px 0; font-size: 14px; }
+  .cot .row.off { color: var(--muted); text-decoration: line-through; }
+  .cot .final { border-top: 1px solid var(--border); margin-top: 6px; padding-top: 8px; font-size: 18px; font-weight: 700; color: var(--accent); }
+  .switch { display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; }
+
+  /* ---------- Ventana flotante ---------- */
+  .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 20; display: flex; align-items: center; justify-content: center; padding: 16px; }
+  .modal { background: var(--panel); border-radius: 12px; width: min(760px, 100%); max-height: calc(100vh - 32px); overflow: auto; padding: 18px; box-shadow: 0 20px 50px rgba(0,0,0,.35); }
+  .modal h3 { margin: 0; font-size: 18px; flex: 1; }
+  .modal .mhead { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .modal .x { border: 0; font-size: 22px; padding: 2px 10px; }
+  .estados { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0 14px; }
+  .estados button { display: flex; align-items: center; gap: 6px; padding: 6px 10px; font-size: 13px; }
+  .estados button.sel { border-color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+  .estados .dot { width: 12px; height: 12px; cursor: inherit; }
+  .drop { border: 2px dashed var(--border); border-radius: 10px; padding: 18px; text-align: center; color: var(--muted); cursor: pointer; margin: 10px 0; }
+  .drop.over { border-color: var(--accent); background: var(--accent-soft); }
+  .files { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
+  .file { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; cursor: pointer; position: relative; background: var(--bg); }
+  .file .th { height: 90px; display: flex; align-items: center; justify-content: center; font-size: 30px; }
+  .file .th img { width: 100%; height: 100%; object-fit: cover; }
+  .file .fn { font-size: 11px; padding: 4px 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: var(--panel); }
+  .file .del { position: absolute; top: 4px; right: 4px; border: 0; background: rgba(0,0,0,.55); color: #fff; border-radius: 50%; width: 22px; height: 22px; padding: 0; font-size: 13px; }
+  .preview { margin-top: 12px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--bg); }
+  .preview img { max-width: 100%; display: block; margin: 0 auto; max-height: 60vh; }
+  .preview iframe { width: 100%; height: 60vh; border: 0; background: #fff; }
+  .preview .ph { padding: 12px; font-size: 13px; display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+
+  /* ---------- Tarifas ---------- */
+  table.tar { border-collapse: collapse; font-size: 14px; }
+  table.tar td, table.tar th { padding: 5px 8px; text-align: left; }
+  table.tar input { width: 140px; }
+
+  /* ---------- Certificación ---------- */
+  .prio { display: inline-block; font-size: 10px; font-weight: 700; padding: 0 5px; border-radius: 4px; background: var(--accent-soft); color: var(--accent); }
+  .prio.p0 { background: #fde2e2; color: #b42323; } .prio.p1 { background: var(--warn-soft); color: var(--warn); }
+  .folder .cert { font-size: 10px; color: var(--ok); font-weight: 700; }
+  .folder .av { font-size: 10px; color: var(--warn); font-weight: 700; }
+  .aviso { border-left: 3px solid var(--warn); background: var(--warn-soft); padding: 8px 10px; border-radius: 6px; margin-top: 8px; font-size: 14px; }
+  .aviso .hint { margin-top: 2px; }
+  .cert-wrap { overflow-x: auto; }
+  table.cert { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.cert th, table.cert td { padding: 6px 8px; border-bottom: 1px solid var(--border); text-align: left; white-space: nowrap; }
+  table.cert td.n, table.cert th.n { text-align: right; }
+  table.cert tr.grp td { background: var(--accent-soft); font-weight: 700; color: var(--accent); }
+  table.cert tr.sub td { font-weight: 600; background: var(--bg); }
+  table.cert tr.tot td { font-weight: 700; font-size: 15px; border-top: 2px solid var(--text); }
+  table.cert tr.done td { color: var(--muted); }
+  table.cert a { text-decoration: none; }
+  .print-only { display: none; }
+  @media print {
+    header, .fab, .no-print, .toast { display: none !important; }
+    body, .card { background: #fff; color: #000; border: 0; }
+    main { padding: 0; max-width: none; }
+    .print-only { display: block; }
+    table.cert th, table.cert td { border-color: #999; color: #000; }
+    table.cert tr.grp td, table.cert tr.sub td { background: #eee; color: #000; }
+  }
+
+  @media (max-width: 900px) { .eq-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 700px) {
+    .part-detail { grid-template-columns: 1fr; }
+    .part-detail .big { min-height: 200px; }
+    .part-detail .big svg { height: 180px; }
+    .form { grid-template-columns: 1fr; }
+    .grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="crumbs" id="crumbs"></div>
+  <div class="toolbar" id="toolbar"></div>
+  <a href="#/certificar" title="Certificación por potencia y prioridad"><button>📋 Certificar</button></a>
+  <a href="#/tarifas" title="Tarifas y valores fijos"><button>⚙ Tarifas</button></a>
+  <button id="sync" title="Volver a leer la planilla">↻ Actualizar</button>
+</header>
+<main id="app"></main>
+<div class="toast" id="toast">Guardado</div>
+
+<!-- CONFIG = { key } (no se sube a GitHub) -->
+<script src="config.local.js"></script>
+<!-- FICHAS (FAX LIST), TIPOS, ALCANCES -->
+<script src="data.js"></script>
+<script>
+const PARTES = [
+  { id: 'eje',      nombre: 'Eje' },
+  { id: 'voluta',   nombre: 'Voluta' },
+  { id: 'cinter',   nombre: 'Cuerpo intermedio' },
+  { id: 'impulsor', nombre: 'Impulsor' },
+  { id: 'gral',     nombre: 'General / sin asignar' },
+];
+const KIND = { a: 'Ajuste', m: 'Mecanizado' };
+
+// Tarifas por defecto (editables en ⚙ Tarifas). potencia: por tipo, lista de { hasta HP, precio }
+const TARIFAS_DEF = {
+  ajuste: 25000, mec: 32000, ph: 0, pintado: 0, alquilacion: 0,
+  bandas: [25, 75, 150], // rangos de potencia (HP) para filtrar y certificar
+  potencia: { 'B-OH2': [{ hasta: 25, precio: 0 }, { hasta: 75, precio: 0 }, { hasta: 150, precio: 0 }, { hasta: 9999, precio: 0 }] },
+};
+
+// El estado de las tareas sale de las novedades: si hay una carga con esa tarea, está hecha
+const ESTADOS = [
+  { id: 'pend', nombre: 'Pendiente' },
+  { id: 'ok',   nombre: 'Hecha' },
+];
+// Tareas que suman valor fijo en la cotización cuando tienen alguna carga
+const TAREA_PH = /^PH$|PRUEBA HIDR/, TAREA_PINTADO = /PINTAD/;
+
+// ---------------- Persistencia ----------------
+// store.cot[eqId][parteId] = cotización cargada
+// store.pot[eqId]           = potencia
+// store.asig[firmaNovedad]  = parte reasignada a mano
+// store.notas[tareaId]      = notas de oficina de la tarea del equipo
+// store.alq[eqId]           = true/false (equipo de alquilación, si se cambió a mano)
+// store.tarifas             = tarifas y valores fijos
+// store.cert[eqId]          = { fecha, monto } cuando el equipo se certificó
+const KEY = 'equipos-ncontrato-v2';
+let store;
+try { store = JSON.parse(localStorage.getItem(KEY)) || null; } catch { store = null; }
+store = Object.assign({ cot: {}, pot: {}, asig: {}, notas: {}, alq: {}, tarifas: {}, cert: {} }, store);
+store.tarifas = Object.assign(JSON.parse(JSON.stringify(TARIFAS_DEF)), store.tarifas);
+const TARIFA = store.tarifas;
+function persist() { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch {} }
+
+const hoy = () => new Date().toLocaleDateString('es-AR');
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+
+// ---------------- Datos de la planilla (endpoint de Apps Script, solo lectura) ----------------
+const API_URL = 'https://script.google.com/macros/s/AKfycbzb0w7R-p5OchaXU_yempYDhWDi9Qlhkq_AVr_mUgqq-wyBFb-pUnMF0mapjPvovp1g/exec';
+const CONFIG = window.CONFIG || {};
+let EQUIPOS = [], NOVEDADES = [], TAREAS = [], AVISOS = [];
+let API = { generado: '', errores: [], sinEquipo: 0 };
+let NOV_EQ = new Map();       // eqId -> novedades
+let estadoCarga = 'cargando'; // 'cargando' | 'ok' | mensaje de error
+
+const norm = (s) => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+const normT = (s) => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/\s+/g, ' ').trim();
+const idEquipo = (ot, tag) => norm(ot) + '-' + norm(tag);
+const otValida = (ot) => /^\d{6,}$/.test(String(ot ?? '').trim());
+const aNum = (v) => typeof v === 'number' ? v : parseFloat(String(v ?? '').replace(',', '.')) || 0;
+const fechaAR = (s) => { const m = String(s ?? '').match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? `${m[3]}/${m[2]}/${m[1]}` : String(s ?? ''); };
+const PARTE_ID = { 'EJE': 'eje', 'VOLUTA': 'voluta', 'CUERPO INTERMEDIO': 'cinter', 'IMPULSOR': 'impulsor' };
+const parteId = (s) => PARTE_ID[normT(s)] || 'gral';
+const agrupar = (list, key) => list.reduce((m, x) => m.set(key(x), (m.get(key(x)) || []).concat(x)), new Map());
+
+// Ficha de FAX LIST (tipo, prioridad, alcance...) del equipo: misma OT y TAG, o única con esa OT,
+// o mismo TAG si la ficha no tiene OT (en FAX LIST muchas veces falta)
+const FICHA_TAG = agrupar(FICHAS, f => norm(f.tag));
+function fichaDe(ot, tag, usadas) {
+  ot = String(ot ?? '').trim();
+  const libres = (list) => list.filter(f => !usadas.has(f.id));
+  const mismaOt = otValida(ot) ? libres(FICHAS.filter(f => f.ot === ot)) : [];
+  return mismaOt.find(f => norm(f.tag) === norm(tag)) || (mismaOt.length === 1 ? mismaOt[0] : null)
+    || libres(FICHA_TAG.get(norm(tag)) || []).filter(f => !otValida(f.ot)).pop() || null;
+}
+
+function procesar(d) {
+  const porId = new Map(), usadas = new Set();
+  const agregar = (ot, tag, f, enIntro) => {
+    const id = idEquipo(ot, tag);
+    if (porId.has(id) || !norm(tag)) return;
+    if (f) usadas.add(f.id);
+    f = f || {};
+    porId.set(id, { id, ot: String(ot ?? '').trim(), tag: String(tag).replace(/\s*\n\s*/g, ' ').trim(),
+      tipo: f.tipo || 'S/T', prio: f.prio || '', alcance: f.alcance || '', desc: f.desc || '', estado: f.estado || '',
+      resp: f.resp || '', area: f.area || '', guia: f.guia || '', ficha: f.id, enIntro,
+      ing: String(f.ing || '').replace(/^(\d{2})\/(\d{2})\/(\d{4})$/, '$3-$2-$1') });
+  };
+  (d.equipos || []).forEach(x => agregar(x.ot, x.tag, fichaDe(x.ot, x.tag, usadas), true));
+  // INTRO no tiene todos los equipos del taller: se suman los de FAX LIST que no están
+  FICHAS.filter(f => !usadas.has(f.id)).forEach(f => agregar(f.ot, f.tag, f, false));
+  EQUIPOS = [...porId.values()];
+  // Novedad/aviso -> equipo: por OT + TAG; si no, por OT (si hay uno solo) o por TAG (si ninguno tiene OT)
+  const porOt = agrupar(EQUIPOS.filter(e => otValida(e.ot)), e => e.ot);
+  const porTag = agrupar(EQUIPOS.filter(e => !otValida(e.ot)), e => norm(e.tag));
+  const equipoDe = (ot, tag, fecha) => {
+    const e = porId.get(idEquipo(ot, tag));
+    if (e) return e;
+    const c = otValida(ot) ? porOt.get(String(ot).trim()) : porTag.get(norm(tag));
+    if (c) return c.length === 1 ? c[0] : null;
+    // OT que no está en ningún equipo: va al equipo sin OT con ese TAG, si la novedad es posterior a su ingreso
+    const s = otValida(ot) ? (porTag.get(norm(tag)) || []).filter(x => /^\d{4}-/.test(x.ing) && String(fecha) >= x.ing) : [];
+    return s.length === 1 ? s[0] : null;
+  };
+
+  TAREAS = (d.tareas || []).map(t => ({ nombre: String(t.t ?? '').trim(), det: !!t.det, ayuda: t.ayuda || '' })).filter(t => t.nombre);
+  NOVEDADES = [];
+  let sinEquipo = 0;
+  (d.novedades || []).forEach(n => {
+    const e = equipoDe(n.ot, n.tag, n.fecha);
+    if (!e) return sinEquipo++;
+    NOVEDADES.push({ eq: e.id, k: normT(n.sector) === 'AJUSTE' ? 'a' : 'm', p: parteId(n.parte), t: String(n.trabajo ?? ''),
+      op: String(n.operario ?? ''), h: aNum(n.horas), tu: n.turno || '', h50: aNum(n.h50), h100: aNum(n.h100),
+      fe: fechaAR(n.fecha), iso: String(n.fecha ?? ''), ta: String(n.tarea ?? '').trim(), obs: String(n.obs ?? '') });
+  });
+  // Firma estable para recordar la parte reasignada a mano aunque cambie el orden de las filas
+  NOVEDADES.forEach(n => n.sig = [n.iso, n.eq, n.k, n.op, n.h, n.ta, n.t.slice(0, 60)].join('|'));
+  NOV_EQ = agrupar(NOVEDADES, n => n.eq);
+  AVISOS = (d.avisos || []).filter(a => normT(a.estado) === 'PENDIENTE')
+    .map(a => ({ ...a, eq: (equipoDe(a.ot, a.tag, a.fecha) || {}).id, fe: fechaAR(a.fecha) }));
+  API = { generado: d.generado || '', errores: d.errores || [], sinEquipo };
+  migrarStore();
+}
+
+// Lo guardado antes de conectar la planilla usaba los ids de FAX LIST (e0, e1...) y el número de fila de la novedad
+function migrarStore() {
+  let cambio = false;
+  EQUIPOS.forEach(e => e.ficha && ['cot', 'pot', 'alq', 'cert'].forEach(k => {
+    if (!(e.ficha in store[k])) return;
+    if (!(e.id in store[k])) store[k][e.id] = store[k][e.ficha];
+    delete store[k][e.ficha]; cambio = true;
+  }));
+  Object.keys(store.asig).filter(k => /^\d+$/.test(k)).forEach(k => { delete store.asig[k]; cambio = true; });
+  if (cambio) persist();
+}
+
+// Clave: la de config.local.js (uso local) o la que escribió esta persona, guardada en su navegador.
+// La versión publicada no lleva config.local.js: la clave nunca queda en el código.
+const CLAVE_KEY = 'equipos-ncontrato-clave';
+let claveSesion = '', errorClave = '';
+function leerClave() {
+  if (CONFIG.key) return CONFIG.key;
+  try { return localStorage.getItem(CLAVE_KEY) || claveSesion; } catch { return claveSesion; }
+}
+function guardarClave(v) {
+  claveSesion = v;
+  try { if (v) localStorage.setItem(CLAVE_KEY, v); else localStorage.removeItem(CLAVE_KEY); } catch {}
+}
+
+async function cargar() {
+  const btn = $('#sync'), clave = leerClave();
+  if (!clave) { estadoCarga = 'clave'; return render(); }
+  btn.disabled = true; btn.textContent = '⏳ Cargando…';
+  try {
+    const r = await fetch(`${CONFIG.url || API_URL}?app=api&key=${encodeURIComponent(clave)}`);
+    if (!r.ok) throw new Error(`La planilla respondió ${r.status}.`);
+    const d = await r.json();
+    if (!d.ok) {
+      if (!CONFIG.key && /clave/i.test(d.msg || '')) { guardarClave(''); errorClave = d.msg; estadoCarga = 'clave'; }
+      throw new Error(d.msg || 'Respuesta inválida de la planilla.');
+    }
+    procesar(d);
+    estadoCarga = 'ok';
+    if (API.errores.length) console.warn('Errores informados por la planilla:', API.errores);
+  } catch (err) {
+    const msg = err instanceof TypeError ? 'No hay conexión con la planilla.' : err.message;
+    if (estadoCarga === 'ok') toast('No se pudo actualizar: ' + msg); else if (estadoCarga !== 'clave') estadoCarga = msg;
+  }
+  btn.disabled = false; btn.textContent = '↻ Actualizar';
+  btn.title = API.generado ? `Datos de la planilla del ${API.generado} — clic para volver a leer` : 'Volver a leer la planilla';
+  render();
+}
+
+// Tareas del equipo en el orden de la hoja TAREAS, más las cargadas que ya no están en la hoja
+function tareasDe(eqId) {
+  const cargas = novsDe(eqId).filter(n => n.ta);
+  const lista = [...TAREAS];
+  cargas.forEach(n => { if (!lista.some(t => normT(t.nombre) === normT(n.ta))) lista.push({ nombre: n.ta, det: false, ayuda: '', extra: true }); });
+  return lista.map(t => {
+    const cs = cargas.filter(n => normT(n.ta) === normT(t.nombre)).sort((a, b) => a.iso < b.iso ? -1 : a.iso > b.iso ? 1 : 0);
+    return { ...t, id: eqId + '|' + normT(t.nombre), cargas: cs, estado: cs.length ? 'ok' : 'pend', ultima: cs[cs.length - 1] };
+  });
+}
+const tieneTarea = (eqId, rx) => novsDe(eqId).some(n => rx.test(normT(n.ta)));
+function avance(e) {
+  const ts = tareasDe(e.id).filter(t => !t.extra);
+  return ts.length ? ts.filter(t => t.estado === 'ok').length / ts.length : 0;
+}
+const esAlquilacion = (e) => store.alq[e.id] ?? /ALQUIL/i.test(e.area);
+const potenciaHP = (e) => parseFloat(String(store.pot[e.id] || '').replace(',', '.')) || 0;
+// Rango de potencia: 'sin' si no tiene potencia cargada, si no el índice del rango (0..n)
+function bandas() {
+  const b = [...TARIFA.bandas].filter(x => x > 0).sort((a, c) => a - c);
+  const fmt = (n) => n.toLocaleString('es-AR');
+  return b.map((h, i) => ({ id: String(i), nombre: i ? `${fmt(b[i - 1])}–${fmt(h)} HP` : `Hasta ${fmt(h)} HP`, hasta: h }))
+    .concat({ id: String(b.length), nombre: b.length ? `Más de ${fmt(b[b.length - 1])} HP` : 'Todas', hasta: Infinity },
+            { id: 'sin', nombre: 'Sin potencia cargada', hasta: null });
+}
+function bandaDe(e) {
+  const hp = potenciaHP(e);
+  return hp ? bandas().find(b => b.hasta !== null && hp <= b.hasta).id : 'sin';
+}
+const PRIOS = [
+  { id: '0', nombre: 'Prioridad 0' }, { id: '1', nombre: 'Prioridad 1' },
+  { id: '2', nombre: 'Prioridad 2' }, { id: '3', nombre: 'Prioridad 3' }, { id: 'sin', nombre: 'Sin prioridad' },
+];
+const prioDe = (e) => /^[0-3]$/.test(e.prio) ? e.prio : 'sin';
+const prioTag = (e) => prioDe(e) === 'sin' ? '' : `<span class="prio p${e.prio}">P${e.prio}</span>`;
+
+function precioPotencia(e) {
+  const hp = potenciaHP(e), tabla = TARIFA.potencia[e.tipo];
+  if (!hp || !tabla) return null;
+  const r = [...tabla].sort((a, b) => a.hasta - b.hasta).find(x => hp <= x.hasta);
+  return r ? r.precio : null;
+}
+
+// ---------------- Archivos (IndexedDB: quedan en este navegador) ----------------
+const DB = {
+  db: null,
+  open() {
+    if (this.db) return Promise.resolve(this.db);
+    return new Promise((res, rej) => {
+      let rq;
+      try { rq = indexedDB.open('equipos-archivos', 1); } catch (err) { return rej(err); }
+      rq.onupgradeneeded = () => rq.result.createObjectStore('files', { keyPath: 'id' }).createIndex('tarea', 'tarea');
+      rq.onsuccess = () => res(this.db = rq.result);
+      rq.onerror = () => rej(rq.error);
+    });
+  },
+  async tx(mode, fn) {
+    const db = await this.open();
+    return new Promise((res, rej) => {
+      const t = db.transaction('files', mode), r = fn(t.objectStore('files'));
+      t.oncomplete = () => res(r && r.result); t.onerror = () => rej(t.error);
+    });
+  },
+  add(rec) { return this.tx('readwrite', s => s.put(rec)); },
+  del(id) { return this.tx('readwrite', s => s.delete(id)); },
+  list(tareaId) { return this.tx('readonly', s => s.index('tarea').getAll(tareaId)); },
+};
+
+const parteDe = (n) => store.asig[n.sig] || n.p;
+const novsDe = (eqId, parteId) =>
+  (NOV_EQ.get(eqId) || []).filter(n => !parteId || parteDe(n) === parteId);
+function horas(list) {
+  const r = { a: 0, m: 0, h50: 0, h100: 0, n: list.length };
+  list.forEach(n => { r[n.k] += n.h; r.h50 += n.h50; r.h100 += n.h100; });
+  return r;
+}
+
+function getCot(eqId, parteId) {
+  const d = (store.cot[eqId] && store.cot[eqId][parteId]) || {};
+  return {
+    material: d.material ?? 0, valorAjuste: d.valorAjuste ?? TARIFA.ajuste,
+    valorMec: d.valorMec ?? TARIFA.mec, extra: d.extra ?? 0, notas: d.notas ?? '',
+  };
+}
+function cotizar(h, c) {
+  const mo = h.a * c.valorAjuste + h.m * c.valorMec;
+  const sub = mo + c.material;
+  const recargo = sub * c.extra / 100;
+  return { mo, sub, recargo, final: sub + recargo };
+}
+
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const money = (n) => '$ ' + Math.round(n).toLocaleString('es-AR');
+const hs = (n) => (Math.round(n * 10) / 10).toLocaleString('es-AR') + ' hs';
+const tipoNombre = (t) => TIPOS[t] ? TIPOS[t].nombre : t;
+const esBomba = (e) => /^B-/.test(e.tipo);
+// Bombas: todas las partes. Resto: general + las que algún operario eligió al cargar
+const partesDe = (e) => esBomba(e) ? PARTES : PARTES.filter(p => p.id === 'gral' || novsDe(e.id, p.id).length);
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 1400); }
+
+// ---------------- Ilustraciones SVG ----------------
+const FOLDER_SVG = `<svg viewBox="0 0 72 58" aria-hidden="true">
+  <path d="M2 8a4 4 0 0 1 4-4h20l6 6h34a4 4 0 0 1 4 4v4H2z" fill="var(--folder-dark)"/>
+  <rect x="2" y="14" width="68" height="42" rx="4" fill="var(--folder)"/>
+  <rect x="2" y="14" width="68" height="6" fill="#fff" opacity=".25"/></svg>`;
+
+const PART_SVG = {
+  eje: `<svg viewBox="0 0 200 120" aria-hidden="true">
+    <g fill="var(--part-fill)" stroke="var(--part-stroke)" stroke-width="2">
+      <rect x="10" y="50" width="30" height="20" rx="2"/>
+      <rect x="40" y="44" width="40" height="32" rx="2"/>
+      <rect x="80" y="40" width="50" height="40" rx="2"/>
+      <rect x="130" y="46" width="35" height="28" rx="2"/>
+      <rect x="165" y="52" width="25" height="16" rx="2"/>
+    </g>
+    <rect x="90" y="40" width="28" height="6" fill="var(--part-stroke)"/>
+    <line x1="5" y1="60" x2="195" y2="60" stroke="var(--part-stroke)" stroke-dasharray="6 4" opacity=".5"/></svg>`,
+  voluta: `<svg viewBox="0 0 200 160" aria-hidden="true">
+    <path d="M100 20 C150 20 175 55 175 85 C175 125 140 145 100 145 C60 145 30 120 30 85 C30 55 55 35 85 30 L85 8 L130 8 L130 22"
+      fill="var(--part-fill)" stroke="var(--part-stroke)" stroke-width="3" stroke-linejoin="round"/>
+    <rect x="78" y="2" width="59" height="8" rx="2" fill="var(--part-stroke)"/>
+    <circle cx="100" cy="85" r="28" fill="var(--bg)" stroke="var(--part-stroke)" stroke-width="3"/>
+    <path d="M100 57 C125 57 140 75 138 95" fill="none" stroke="var(--part-stroke)" stroke-width="2" opacity=".6"/></svg>`,
+  cinter: `<svg viewBox="0 0 160 160" aria-hidden="true">
+    <circle cx="80" cy="80" r="68" fill="var(--part-fill)" stroke="var(--part-stroke)" stroke-width="3"/>
+    <circle cx="80" cy="80" r="42" fill="var(--bg)" stroke="var(--part-stroke)" stroke-width="3"/>
+    <circle cx="80" cy="80" r="52" fill="none" stroke="var(--part-stroke)" stroke-width="1.5" opacity=".5"/>
+    ${[0,45,90,135,180,225,270,315].map(a => {
+      const x = 80 + 60*Math.cos(a*Math.PI/180), y = 80 + 60*Math.sin(a*Math.PI/180);
+      return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4" fill="var(--bg)" stroke="var(--part-stroke)" stroke-width="1.5"/>`;
+    }).join('')}</svg>`,
+  impulsor: `<svg viewBox="0 0 160 160" aria-hidden="true">
+    <circle cx="80" cy="80" r="66" fill="var(--part-fill)" stroke="var(--part-stroke)" stroke-width="3"/>
+    ${[0,60,120,180,240,300].map(a =>
+      `<path d="M80 80 Q 105 60 128 38" transform="rotate(${a} 80 80)" fill="none" stroke="var(--part-stroke)" stroke-width="5" stroke-linecap="round"/>`
+    ).join('')}
+    <circle cx="80" cy="80" r="16" fill="var(--bg)" stroke="var(--part-stroke)" stroke-width="3"/>
+    <rect x="76" y="62" width="8" height="6" fill="var(--part-stroke)"/></svg>`,
+  gral: `<svg viewBox="0 0 160 160" aria-hidden="true">
+    <g fill="none" stroke="var(--part-stroke)" stroke-width="5" stroke-linecap="round">
+      <path d="M48 112 L100 60"/><circle cx="110" cy="50" r="18" fill="var(--part-fill)"/>
+      <path d="M40 40 L70 70 M30 50 L50 30"/></g>
+    <circle cx="44" cy="116" r="8" fill="var(--part-fill)" stroke="var(--part-stroke)" stroke-width="3"/></svg>`,
+};
+
+// ---------------- Router ----------------
+const ui = { q: '', tipo: '', alc: '', prio: '', pot: '', cert: '' };
+window.addEventListener('hashchange', render);
+function go(h) { location.hash = h; }
+
+function render() {
+  cerrarModal();
+  if (estadoCarga !== 'ok') return viewCarga();
+  const path = location.hash.replace(/^#\/?/, '').split('/');
+  if (path[0] === 'tarifas') return viewTarifas();
+  if (path[0] === 'certificar') return viewCertificar();
+  const e = path[0] === 'eq' && EQUIPOS.find(x => x.id === path[1]);
+  if (e) {
+    if (path[2] && partesDe(e).find(p => p.id === path[2])) return viewParte(e, path[2]);
+    return viewEquipo(e);
+  }
+  viewLista();
+}
+
+function crumbs(items) {
+  $('#crumbs').innerHTML = items.map((it, i) =>
+    i < items.length - 1 ? `<a href="${it.href}">${esc(it.label)}</a><span class="sep">›</span>` : `<strong>${esc(it.label)}</strong>`
+  ).join('');
+}
+
+function viewCarga() {
+  crumbs([{ label: '📁 Equipos' }]);
+  $('#toolbar').innerHTML = '';
+  if (estadoCarga === 'clave') {
+    $('#app').innerHTML = `<div class="card" style="max-width:420px;margin:40px auto">
+      <h2>Ingresá la clave</h2>
+      <p class="hint">Pedísela a quien administra la planilla. Queda guardada en este navegador.</p>
+      ${errorClave ? `<p style="color:var(--warn)">${esc(errorClave)}</p>` : ''}
+      <div class="row-inline"><input id="clave" type="password" autocomplete="off" style="flex:1;min-width:0"><button class="primary" id="clave-ok">Entrar</button></div>
+    </div>`;
+    const entrar = () => {
+      const v = $('#clave').value.trim();
+      if (!v) return $('#clave').focus();
+      guardarClave(v); errorClave = ''; estadoCarga = 'cargando';
+      render(); cargar();
+    };
+    $('#clave-ok').onclick = entrar;
+    $('#clave').onkeydown = (ev) => { if (ev.key === 'Enter') entrar(); };
+    $('#clave').focus();
+    return;
+  }
+  $('#app').innerHTML = estadoCarga === 'cargando'
+    ? '<div class="empty">Cargando datos de la planilla…</div>'
+    : `<div class="empty">No se pudieron cargar los datos de la planilla.<br><b>${esc(estadoCarga)}</b><br><br>
+        <button class="primary" id="reint">Reintentar</button></div>`;
+  if ($('#reint')) $('#reint').onclick = cargar;
+}
+
+// ---------------- Vista 1: carpetas ----------------
+// Filtros compartidos por la lista de carpetas y la certificación
+function filtrosHTML() {
+  const tipos = [...new Set(EQUIPOS.map(e => e.tipo))].sort();
+  const opt = (arr, cur, todos) => `<option value="">${todos}</option>` +
+    arr.map(o => `<option value="${esc(o.id)}" ${o.id === cur ? 'selected' : ''}>${esc(o.nombre)}</option>`).join('');
+  return `
+    <input id="q" type="search" placeholder="Buscar TAG, OT, descripción..." value="${esc(ui.q)}">
+    <select id="f-tipo">${opt(tipos.map(t => ({ id: t, nombre: `${t} · ${tipoNombre(t)}` })), ui.tipo, 'Todos los tipos')}</select>
+    <select id="f-prio">${opt(PRIOS, ui.prio, 'Todas las prioridades')}</select>
+    <select id="f-pot">${opt(bandas(), ui.pot, 'Todas las potencias')}</select>
+    <select id="f-alc">${opt(Object.entries(ALCANCES).map(([id, nombre]) => ({ id, nombre })), ui.alc, 'RG y RP')}</select>
+    <select id="f-cert">${opt([{ id: 'no', nombre: 'Sin certificar' }, { id: 'si', nombre: 'Certificados' }], ui.cert, 'Certificados y no')}</select>`;
+}
+function conectarFiltros(redraw) {
+  $('#q').oninput = (ev) => { ui.q = ev.target.value; redraw(); };
+  ['tipo', 'prio', 'pot', 'alc', 'cert'].forEach(k => $('#f-' + k).onchange = (ev) => { ui[k] = ev.target.value; redraw(); });
+}
+function filtrar() {
+  const q = ui.q.trim().toLowerCase();
+  return EQUIPOS.filter(e =>
+    (!ui.tipo || e.tipo === ui.tipo) && (!ui.alc || e.alcance === ui.alc) &&
+    (!ui.prio || prioDe(e) === ui.prio) && (!ui.pot || bandaDe(e) === ui.pot) &&
+    (!ui.cert || (ui.cert === 'si') === !!store.cert[e.id]) &&
+    (!q || [e.tag, e.ot, e.tipo, e.desc, e.area, e.resp].join(' ').toLowerCase().includes(q)));
+}
+
+function viewLista() {
+  crumbs([{ label: '📁 Equipos' }]);
+  $('#toolbar').innerHTML = filtrosHTML();
+  conectarFiltros(drawGrid);
+  drawGrid();
+}
+function drawGrid() {
+  const list = filtrar();
+  const avisos = agrupar(AVISOS, a => a.eq);
+  const notas = [`planilla al ${esc(API.generado || '—')}`];
+  const faltan = EQUIPOS.filter(e => !e.enIntro).length;
+  if (faltan) notas.push(`${faltan} equipos de FAX LIST que no están en INTRO`);
+  if (API.sinEquipo) notas.push(`${API.sinEquipo} novedades de equipos que no están en INTRO ni en FAX LIST`);
+  if (API.errores.length) notas.push(`<span title="${esc(API.errores.join('\n'))}">⚠ ${API.errores.length} errores en la planilla</span>`);
+  $('#app').innerHTML = `<p class="count">${list.length} de ${EQUIPOS.length} equipos · ${notas.join(' · ')}</p>` + (list.length
+    ? `<div class="grid">${list.map(e => {
+        const nAv = (avisos.get(e.id) || []).length;
+        return `
+        <div class="folder" tabindex="0" data-id="${e.id}" title="${esc(e.desc)}">
+          ${FOLDER_SVG}
+          <div class="tag">${esc(e.tag)}</div>
+          <div class="meta">${prioTag(e)} ${esc(e.tipo)}${e.alcance ? ' · ' + e.alcance : ''}${store.pot[e.id] ? ' · ' + esc(store.pot[e.id]) : ''}<br>OT ${esc(e.ot || 's/OT')}</div>
+          ${store.cert[e.id] ? `<div class="cert">✔ Certificado ${esc(store.cert[e.id].fecha)}</div>` : ''}
+          ${nAv ? `<div class="av">⚠ ${nAv} aviso${nAv > 1 ? 's' : ''}</div>` : ''}
+          <div class="bar"><i style="width:${Math.round(avance(e) * 100)}%"></i></div>
+        </div>`;}).join('')}</div>`
+    : `<div class="empty">No hay equipos que coincidan.</div>`);
+  document.querySelectorAll('.folder').forEach(f => {
+    f.onclick = () => go('#/eq/' + f.dataset.id);
+    f.onkeydown = (ev) => { if (ev.key === 'Enter') f.onclick(); };
+  });
+}
+
+// ---------------- Vista 2: equipo ----------------
+function infoBlock(e, editPot) {
+  const pot = store.pot[e.id] || '';
+  return `<div class="info">
+    <div>TAG<b>${esc(e.tag)}</b></div>
+    <div>OT<b>${esc(e.ot || '—')}</b></div>
+    <div>Prioridad<b>${prioDe(e) === 'sin' ? '—' : 'P' + esc(e.prio)}</b></div>
+    <div>Tipo<b title="${esc(TIPOS[e.tipo]?.ej || '')}">${esc(e.tipo)} · ${esc(tipoNombre(e.tipo))}</b></div>
+    <div>Potencia<b>${editPot ? `<input id="pot" placeholder="ej. 75 HP" value="${esc(pot)}">` : esc(pot || '—')}</b></div>
+    <div>Reparación<b>${esc(ALCANCES[e.alcance] || '—')}</b></div>
+    <div>Avance<b>${Math.round(avance(e) * 100)}%</b></div>
+    ${e.enIntro ? '' : `<div>En INTRO<b title="Está en FAX LIST pero no en la hoja INTRO: los operarios no lo pueden elegir">No</b></div>`}
+    ${e.area ? `<div>Área<b>${esc(e.area)}</b></div>` : ''}
+    ${e.resp ? `<div>Responsable<b>${esc(e.resp)}</b></div>` : ''}
+    ${e.guia ? `<div>Guía<b><a href="${esc(e.guia)}" target="_blank" rel="noopener">Abrir guía</a></b></div>` : ''}
+  </div>`;
+}
+// Cotización del equipo: precio por potencia + partes (horas, material, % extra) + PH + pintado, + extra alquilación
+function cotizarEquipo(e) {
+  let partes = 0;
+  partesDe(e).forEach(p => partes += cotizar(horas(novsDe(e.id, p.id)), getCot(e.id, p.id)).final);
+  const pot = precioPotencia(e);
+  const ph = tieneTarea(e.id, TAREA_PH) ? TARIFA.ph : 0;
+  const pin = tieneTarea(e.id, TAREA_PINTADO) ? TARIFA.pintado : 0;
+  const sub = (pot || 0) + partes + ph + pin;
+  const alq = esAlquilacion(e) ? sub * TARIFA.alquilacion / 100 : 0;
+  return { pot, partes, ph, pin, sub, alq, final: sub + alq };
+}
+
+function viewEquipo(e) {
+  crumbs([{ label: '📁 Equipos', href: '#/' }, { label: e.tag }]);
+  $('#toolbar').innerHTML = '';
+  const tot = horas(novsDe(e.id));
+  const q = cotizarEquipo(e);
+  const tareas = tareasDe(e.id);
+  const enLista = tareas.filter(t => !t.extra);
+  const hechas = enLista.filter(t => t.estado === 'ok').length;
+  const avisos = AVISOS.filter(a => a.eq === e.id);
+
+  $('#app').innerHTML = `
+    <div class="card eq-head">${FOLDER_SVG}<div style="flex:1">
+      <h1>Equipo ${esc(e.tag)}</h1><div class="desc">${esc(e.desc)}${e.estado ? ' · ' + esc(e.estado) : ''}</div>
+      ${infoBlock(e, true)}</div></div>
+    <div class="totals">
+      <div class="stat"><div class="lbl">Horas de ajuste</div><div class="val">${hs(tot.a)}</div></div>
+      <div class="stat"><div class="lbl">Horas de mecanizado</div><div class="val">${hs(tot.m)}</div></div>
+      <div class="stat"><div class="lbl">Horas extra</div><div class="val">${hs(tot.h50 + tot.h100)}</div>
+        <div class="sub">50%: ${hs(tot.h50)} · 100%: ${hs(tot.h100)}</div></div>
+      <div class="stat"><div class="lbl">Total cotizado</div><div class="val">${money(q.final)}</div></div>
+    </div>
+    <div class="eq-grid">
+      <div>
+        <h2>Partes</h2>
+        <div class="parts" id="parts"></div>
+      </div>
+      <div class="side">
+        ${avisos.length ? `<div class="card">
+          <h2>⚠ Avisos pendientes <span class="hint">${avisos.length}</span></h2>
+          ${avisos.map(a => `<div class="aviso"><div>${esc(a.aviso)}</div>
+            <div class="hint">${esc(a.fe)} · ${esc(a.operario)}${a.tarea ? ' · ' + esc(a.tarea) : ''}</div></div>`).join('')}
+        </div>` : ''}
+        <div class="card">
+          <h2>Tareas <span class="hint">${hechas} de ${enLista.length} hechas</span></h2>
+          <ul class="tasks">${tareas.map((t, i) => `
+            <li data-t="${i}" tabindex="0" title="${esc(t.ayuda)}">
+              <i class="dot ${t.estado}"></i>
+              <span class="tname">${esc(t.nombre)}${t.extra ? ' <span class="hint">(no está en la hoja TAREAS)</span>' : ''}</span>
+              <span class="tmeta">${t.ultima ? `${esc(t.ultima.op)} · ${esc(t.ultima.fe)}` : ''} <span data-files="${i}"></span></span>
+            </li>`).join('') || '<li class="empty">La hoja TAREAS está vacía</li>'}</ul>
+          <div class="legend">${ESTADOS.map(s => `<span><i class="dot ${s.id}"></i>${s.nombre}</span>`).join('')}</div>
+          <p class="hint">Se marcan solas cuando un operario carga una novedad con esa tarea.</p>
+        </div>
+        <div class="card cot">
+          <h2>Cotización del equipo</h2>
+          <div class="row ${q.pot == null ? 'off' : ''}"><span>Precio por potencia ${q.pot == null ? '<span class="hint">(cargá la potencia o la tabla del tipo)</span>' : `(${esc(e.tipo)}, ${potenciaHP(e)} HP)`}</span><span>${money(q.pot || 0)}</span></div>
+          <div class="row"><span>Partes (horas + material + % extra)</span><span>${money(q.partes)}</span></div>
+          <div class="row ${q.ph ? '' : 'off'}"><span>PH (valor fijo)</span><span>${money(TARIFA.ph)}</span></div>
+          <div class="row ${q.pin ? '' : 'off'}"><span>Pintado (valor fijo)</span><span>${money(TARIFA.pintado)}</span></div>
+          <div class="row"><span>Subtotal</span><span>${money(q.sub)}</span></div>
+          <label class="switch"><input type="checkbox" id="alq" ${esAlquilacion(e) ? 'checked' : ''}> Equipo de alquilación (+${TARIFA.alquilacion}%)</label>
+          <div class="row ${esAlquilacion(e) ? '' : 'off'}"><span>Extra alquilación</span><span>${money(q.alq)}</span></div>
+          <div class="row final"><span>Precio final cliente</span><span>${money(q.final)}</span></div>
+        </div>
+      </div>
+    </div>`;
+
+  $('#parts').innerHTML = partesDe(e).map(p => {
+      const h = horas(novsDe(e.id, p.id));
+      return `<div class="part" tabindex="0" data-p="${p.id}">
+        <div class="img">${PART_SVG[p.id]}</div>
+        <div class="name">${p.nombre}<span class="badge ${h.n ? 'ok' : 'pend'}">${h.n ? h.n + ' nov.' : 'Sin datos'}</span></div>
+        <div class="hrs">Ajuste ${hs(h.a)} · Mec. ${hs(h.m)}</div>
+      </div>`;}).join('');
+  $('#pot').onchange = (ev) => { store.pot[e.id] = ev.target.value.trim(); persist(); toast('Potencia guardada'); render(); };
+  $('#alq').onchange = (ev) => { store.alq[e.id] = ev.target.checked; persist(); render(); };
+  document.querySelectorAll('.part').forEach(c => {
+    c.onclick = () => go(`#/eq/${e.id}/${c.dataset.p}`);
+    c.onkeydown = (ev) => { if (ev.key === 'Enter') c.onclick(); };
+  });
+  document.querySelectorAll('.tasks li[data-t]').forEach(li => {
+    li.onclick = () => abrirTarea(e, +li.dataset.t);
+    li.onkeydown = (ev) => { if (ev.key === 'Enter') li.onclick(); };
+  });
+  // Cantidad de adjuntos por tarea
+  tareas.forEach((t, i) => DB.list(t.id).then(fs => {
+    const el = document.querySelector(`[data-files="${i}"]`);
+    if (el && fs.length) el.textContent = `📎 ${fs.length}`;
+  }).catch(() => {}));
+}
+
+// ---------------- Ventana flotante de tarea ----------------
+let modalUrls = [];
+function cerrarModal() {
+  const m = $('#modal'); if (m) m.remove();
+  modalUrls.forEach(u => URL.revokeObjectURL(u)); modalUrls = [];
+}
+function modal(html) {
+  cerrarModal();
+  const bg = document.createElement('div');
+  bg.className = 'modal-bg'; bg.id = 'modal';
+  bg.innerHTML = `<div class="modal" role="dialog" aria-modal="true">${html}</div>`;
+  bg.onclick = (ev) => { if (ev.target === bg) cerrarModal(); };
+  document.body.appendChild(bg);
+  bg.querySelectorAll('[data-close]').forEach(b => b.onclick = cerrarModal);
+  return bg;
+}
+document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') cerrarModal(); });
+
+const icono = (type) => /pdf/.test(type) ? '📄' : /sheet|excel|csv/.test(type) ? '📊' : /word|document/.test(type) ? '📝' : /video/.test(type) ? '🎬' : '📎';
+const peso = (b) => b > 1048576 ? (b / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(b / 1024)) + ' KB';
+
+function abrirTarea(e, idx) {
+  const t = tareasDe(e.id)[idx];
+  if (!t) return;
+  const m = modal(`
+    <div class="mhead"><i class="dot ${t.estado}"></i><h3>${esc(t.nombre)} · ${esc(e.tag)}</h3><button class="x" data-close>×</button></div>
+    <div class="hint">${t.cargas.length ? `Hecha · ${t.cargas.length} carga${t.cargas.length > 1 ? 's' : ''}` : 'Pendiente: todavía ningún operario cargó esta tarea'}${e.ot ? ' · OT ' + esc(e.ot) : ''}</div>
+    ${t.ayuda ? `<p class="hint">💡 ${esc(t.ayuda)}</p>` : ''}
+    ${t.cargas.length ? `<div class="nov-wrap" style="margin-top:10px"><table class="nov"><thead><tr>
+        <th>Fecha</th><th>Tipo</th><th>Operario</th><th>Hs</th><th>Trabajo</th></tr></thead><tbody>${t.cargas.map(n => `<tr>
+        <td>${esc(n.fe)}</td><td><span class="kind">${KIND[n.k]}</span></td><td>${esc(n.op)}</td><td class="n">${n.h || ''}</td>
+        <td>${esc(n.t)}${n.obs ? `<br><span class="hint">${esc(n.obs)}</span>` : ''}</td></tr>`).join('')}</tbody></table></div>` : ''}
+    <label class="hint" style="display:flex;flex-direction:column;gap:4px;margin-top:14px">Notas de oficina
+      <textarea id="tnotas" placeholder="Observaciones de la tarea...">${esc(store.notas[t.id])}</textarea></label>
+    <div class="drop" id="drop">📷 Arrastrá fotos o documentos acá, o <u>hacé clic para elegir</u>
+      <input type="file" id="fin" multiple hidden accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,video/*"></div>
+    <div class="files" id="files"></div>
+    <div class="preview" id="prev" hidden></div>
+    <div class="actions" style="margin-top:14px"><button data-close>Cerrar</button></div>`);
+
+  m.querySelector('#tnotas').oninput = (ev) => {
+    if (ev.target.value) store.notas[t.id] = ev.target.value; else delete store.notas[t.id];
+    persist();
+  };
+
+  const drop = m.querySelector('#drop'), fin = m.querySelector('#fin');
+  drop.onclick = () => fin.click();
+  drop.ondragover = (ev) => { ev.preventDefault(); drop.classList.add('over'); };
+  drop.ondragleave = () => drop.classList.remove('over');
+  drop.ondrop = (ev) => { ev.preventDefault(); drop.classList.remove('over'); subir([...ev.dataTransfer.files]); };
+  fin.onchange = () => { subir([...fin.files]); fin.value = ''; };
+
+  async function subir(list) {
+    try {
+      for (const f of list) await DB.add({ id: uid(), tarea: t.id, eq: e.id, name: f.name, type: f.type, size: f.size, fecha: hoy(), blob: f });
+      dibujar(); toast(list.length > 1 ? `${list.length} archivos cargados` : 'Archivo cargado');
+    } catch { toast('No se pudo guardar el archivo en este navegador'); }
+  }
+  async function dibujar() {
+    let fs = [];
+    try { fs = await DB.list(t.id); } catch {}
+    modalUrls.forEach(u => URL.revokeObjectURL(u)); modalUrls = [];
+    const box = m.querySelector('#files');
+    box.innerHTML = fs.length ? fs.map(f => {
+      let th = `<div class="th">${icono(f.type)}</div>`;
+      if (/^image\//.test(f.type)) { const u = URL.createObjectURL(f.blob); modalUrls.push(u); th = `<div class="th"><img src="${u}" alt=""></div>`; }
+      return `<div class="file" data-f="${f.id}" title="${esc(f.name)}">${th}<div class="fn">${esc(f.name)}</div>
+        <button class="del" data-del="${f.id}" title="Quitar">×</button></div>`;
+    }).join('') : '<div class="hint">Todavía no hay archivos.</div>';
+    box.querySelectorAll('[data-f]').forEach(el => el.onclick = () => ver(fs.find(f => f.id === el.dataset.f)));
+    box.querySelectorAll('[data-del]').forEach(b => b.onclick = async (ev) => {
+      ev.stopPropagation(); await DB.del(b.dataset.del); m.querySelector('#prev').hidden = true; dibujar();
+    });
+    refrescarLista();
+  }
+  function ver(f) {
+    const p = m.querySelector('#prev'), u = URL.createObjectURL(f.blob); modalUrls.push(u);
+    let body;
+    if (/^image\//.test(f.type)) body = `<img src="${u}" alt="${esc(f.name)}">`;
+    else if (/pdf/.test(f.type)) body = `<iframe src="${u}" title="${esc(f.name)}"></iframe>`;
+    else if (/^video\//.test(f.type)) body = `<video src="${u}" controls style="width:100%;max-height:60vh"></video>`;
+    else if (/^text\/|csv/.test(f.type)) body = `<iframe src="${u}" title="${esc(f.name)}"></iframe>`;
+    else body = `<div class="empty">${icono(f.type)} Sin vista previa para este tipo de archivo.</div>`;
+    p.innerHTML = `<div class="ph"><span><b>${esc(f.name)}</b> · ${peso(f.size)} · ${esc(f.fecha)}</span>
+      <a href="${u}" download="${esc(f.name)}"><button>Descargar</button></a></div>${body}`;
+    p.hidden = false;
+    p.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+  // Actualiza la lista de tareas de fondo sin cerrar la ventana
+  function refrescarLista() {
+    DB.list(t.id).then(fs => { const el = document.querySelector(`[data-files="${idx}"]`); if (el) el.textContent = fs.length ? `📎 ${fs.length}` : ''; }).catch(() => {});
+  }
+  dibujar();
+}
+
+// ---------------- Certificación ----------------
+// Agrupa los equipos filtrados por prioridad y potencia (o al revés), con subtotales.
+// Al certificar se congela el monto del momento en store.cert.
+const certSel = new Set();
+ui.grp = 'prio';
+function filaCert(e) {
+  const h = horas(novsDe(e.id)), c = store.cert[e.id];
+  return { e, h, monto: c ? c.monto : cotizarEquipo(e).final, c };
+}
+function viewCertificar() {
+  crumbs([{ label: '📁 Equipos', href: '#/' }, { label: '📋 Certificación' }]);
+  $('#toolbar').innerHTML = filtrosHTML() + `
+    <select id="f-grp"><option value="prio" ${ui.grp === 'prio' ? 'selected' : ''}>Agrupar: prioridad › potencia</option>
+      <option value="pot" ${ui.grp === 'pot' ? 'selected' : ''}>Agrupar: potencia › prioridad</option></select>`;
+  conectarFiltros(drawCert);
+  $('#f-grp').onchange = (ev) => { ui.grp = ev.target.value; drawCert(); };
+  drawCert();
+}
+function drawCert() {
+  const filas = filtrar().map(filaCert);
+  const nivel1 = ui.grp === 'prio' ? { lista: PRIOS, de: prioDe } : { lista: bandas(), de: bandaDe };
+  const nivel2 = ui.grp === 'prio' ? { lista: bandas(), de: bandaDe } : { lista: PRIOS, de: prioDe };
+  const suma = (fs) => fs.reduce((t, f) => ({ n: t.n + 1, a: t.a + f.h.a, m: t.m + f.h.m, x: t.x + f.h.h50 + f.h.h100, $: t.$ + f.monto }),
+    { n: 0, a: 0, m: 0, x: 0, $: 0 });
+  const totRow = (cls, label, t) => `<tr class="${cls}"><td class="no-print"></td><td colspan="6">${label} <span class="hint">(${t.n} equipos)</span></td>
+    <td class="n">${hs(t.a)}</td><td class="n">${hs(t.m)}</td><td class="n">${hs(t.x)}</td><td class="n">${money(t.$)}</td><td></td></tr>`;
+
+  let body = '';
+  nivel1.lista.forEach(g1 => {
+    const f1 = filas.filter(f => nivel1.de(f.e) === g1.id);
+    if (!f1.length) return;
+    body += `<tr class="grp"><td class="no-print"></td><td colspan="11">${esc(g1.nombre)}</td></tr>`;
+    nivel2.lista.forEach(g2 => {
+      const f2 = f1.filter(f => nivel2.de(f.e) === g2.id);
+      if (!f2.length) return;
+      body += f2.map(({ e, h, monto, c }) => `<tr class="${c ? 'done' : ''}">
+        <td class="no-print"><input type="checkbox" data-sel="${e.id}" ${certSel.has(e.id) ? 'checked' : ''}></td>
+        <td><a href="#/eq/${e.id}">${esc(e.tag)}</a></td><td>${esc(e.ot)}</td><td>${esc(e.tipo)}</td>
+        <td>${esc(store.pot[e.id] || '—')}</td><td>${prioDe(e) === 'sin' ? '—' : 'P' + esc(e.prio)}</td>
+        <td>${Math.round(avance(e) * 100)}%</td>
+        <td class="n">${hs(h.a)}</td><td class="n">${hs(h.m)}</td><td class="n">${hs(h.h50 + h.h100)}</td>
+        <td class="n">${money(monto)}</td><td>${c ? '✔ ' + esc(c.fecha) : 'Pendiente'}</td></tr>`).join('');
+      body += totRow('sub', `Subtotal ${esc(g1.nombre)} · ${esc(g2.nombre)}`, suma(f2));
+    });
+  });
+
+  const t = suma(filas), pend = suma(filas.filter(f => !f.c));
+  $('#app').innerHTML = `
+    <div class="print-only"><h2>Certificación de equipos — ${hoy()}</h2></div>
+    <div class="totals">
+      <div class="stat"><div class="lbl">Equipos</div><div class="val">${t.n}</div><div class="sub">${t.n - pend.n} certificados</div></div>
+      <div class="stat"><div class="lbl">Horas ajuste / mec.</div><div class="val">${hs(t.a + t.m)}</div><div class="sub">${hs(t.a)} · ${hs(t.m)}</div></div>
+      <div class="stat"><div class="lbl">Pendiente de certificar</div><div class="val">${money(pend.$)}</div></div>
+      <div class="stat"><div class="lbl">Total del listado</div><div class="val">${money(t.$)}</div></div>
+    </div>
+    <div class="row-inline no-print" style="margin-bottom:12px">
+      <button id="c-all">Seleccionar pendientes</button>
+      <button class="primary" id="c-ok">✔ Certificar seleccionados (<span id="c-n">${certSel.size}</span>)</button>
+      <button id="c-undo">Quitar certificación</button>
+      <span style="flex:1"></span>
+      <button id="c-csv">⬇ Exportar CSV</button>
+      <button id="c-print">🖨 Imprimir</button>
+    </div>
+    <div class="card cert-wrap">${filas.length ? `<table class="cert"><thead><tr>
+        <th class="no-print"></th><th>TAG</th><th>OT</th><th>Tipo</th><th>Potencia</th><th>Prio</th><th>Avance</th>
+        <th class="n">Hs ajuste</th><th class="n">Hs mec.</th><th class="n">Hs extra</th><th class="n">Monto</th><th>Certificado</th>
+      </tr></thead><tbody>${body}${totRow('tot', 'TOTAL', t)}</tbody></table>`
+      : '<div class="empty">No hay equipos con estos filtros.</div>'}</div>
+    <p class="hint no-print">Los equipos sin potencia cargada quedan en "Sin potencia cargada". Al certificar se guarda el monto de ese momento;
+      si después cambian horas o tarifas, el certificado no se modifica (quitá la certificación y volvé a certificar para actualizarlo).</p>`;
+
+  document.querySelectorAll('[data-sel]').forEach(cb => cb.onchange = () => {
+    cb.checked ? certSel.add(cb.dataset.sel) : certSel.delete(cb.dataset.sel);
+    $('#c-n').textContent = certSel.size;
+  });
+  $('#c-all').onclick = () => { filas.filter(f => !f.c).forEach(f => certSel.add(f.e.id)); drawCert(); };
+  $('#c-ok').onclick = () => {
+    if (!certSel.size) return toast('Seleccioná equipos primero');
+    const n = certSel.size;
+    certSel.forEach(id => { const e = EQUIPOS.find(x => x.id === id); if (!store.cert[id]) store.cert[id] = { fecha: hoy(), monto: cotizarEquipo(e).final }; });
+    certSel.clear(); persist(); drawCert(); toast(`${n} equipo(s) certificados`);
+  };
+  $('#c-undo').onclick = () => {
+    if (!certSel.size) return toast('Seleccioná equipos certificados para quitar');
+    certSel.forEach(id => delete store.cert[id]);
+    certSel.clear(); persist(); drawCert(); toast('Certificación quitada');
+  };
+  $('#c-print').onclick = () => window.print();
+  $('#c-csv').onclick = () => {
+    const cols = ['TAG', 'OT', 'TIPO', 'POTENCIA', 'RANGO POTENCIA', 'PRIORIDAD', 'ALCANCE', 'AVANCE %', 'HS AJUSTE', 'HS MECANIZADO', 'HS EXTRA 50%', 'HS EXTRA 100%', 'MONTO', 'CERTIFICADO'];
+    const nb = Object.fromEntries(bandas().map(b => [b.id, b.nombre]));
+    const num = (n) => String(Math.round(n * 100) / 100).replace('.', ',');
+    const lines = filas.map(({ e, h, monto, c }) => [e.tag, e.ot, e.tipo, store.pot[e.id] || '', nb[bandaDe(e)], prioDe(e) === 'sin' ? '' : e.prio,
+      e.alcance, Math.round(avance(e) * 100), num(h.a), num(h.m), num(h.h50), num(h.h100), num(monto), c ? c.fecha : '']);
+    const csv = '﻿' + [cols, ...lines].map(r => r.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(';')).join('\r\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+    a.download = `certificacion_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  };
+}
+
+// ---------------- Tarifas ----------------
+function viewTarifas() {
+  crumbs([{ label: '📁 Equipos', href: '#/' }, { label: '⚙ Tarifas y valores fijos' }]);
+  $('#toolbar').innerHTML = '';
+  const tipos = [...new Set(EQUIPOS.map(e => e.tipo).concat(Object.keys(TARIFA.potencia)))].filter(t => /^B-/.test(t)).sort();
+  const sel = viewTarifas.tipo || 'B-OH2';
+  const filas = TARIFA.potencia[sel] || [];
+  const num = (id, label, val) => `<label>${label}<input type="number" min="0" step="any" data-k="${id}" value="${val}"></label>`;
+  $('#app').innerHTML = `
+    <div class="card" style="margin-bottom:16px">
+      <h2>Valores generales</h2>
+      <div class="form">
+        ${num('ajuste', 'Valor hora ajuste ($)', TARIFA.ajuste)}
+        ${num('mec', 'Valor hora mecanizado ($)', TARIFA.mec)}
+        ${num('ph', 'PH — valor fijo ($)', TARIFA.ph)}
+        ${num('pintado', 'Pintado — valor fijo ($)', TARIFA.pintado)}
+        ${num('alquilacion', 'Extra equipos de alquilación (%)', TARIFA.alquilacion)}
+        <label>Rangos de potencia para filtros y certificación (HP, separados por coma)
+          <input id="bandas" value="${TARIFA.bandas.join(', ')}" placeholder="25, 75, 150"></label>
+      </div>
+      <p class="hint">PH y pintado se suman cuando el equipo tiene esa tarea. El extra de alquilación se aplica sobre el subtotal del equipo.
+        Los valores hora son los que toma cada parte nueva; si una parte ya tiene valores cargados, conserva los suyos.</p>
+    </div>
+    <div class="card">
+      <h2>Precio por potencia</h2>
+      <div class="row-inline" style="margin-bottom:10px">Tipo
+        <select id="ttipo">${tipos.map(t => `<option value="${t}" ${t === sel ? 'selected' : ''}>${t} · ${esc(tipoNombre(t))}</option>`).join('')}</select></div>
+      <table class="tar"><thead><tr><th>Hasta (HP)</th><th>Precio ($)</th><th></th></tr></thead><tbody>
+        ${filas.map((r, i) => `<tr>
+          <td><input type="number" min="0" step="any" data-r="${i}" data-c="hasta" value="${r.hasta}"></td>
+          <td><input type="number" min="0" step="any" data-r="${i}" data-c="precio" value="${r.precio}"></td>
+          <td><button data-rm="${i}" title="Quitar">×</button></td></tr>`).join('')}
+      </tbody></table>
+      <div class="row-inline" style="margin-top:10px"><button id="radd">+ Agregar rango</button>
+        <span class="hint">Se usa el primer rango cuyo "hasta" sea mayor o igual a la potencia del equipo.</span></div>
+    </div>`;
+  document.querySelectorAll('[data-k]').forEach(i => i.onchange = () => { TARIFA[i.dataset.k] = parseFloat(i.value) || 0; persist(); toast('Guardado'); });
+  $('#bandas').onchange = (ev) => {
+    TARIFA.bandas = ev.target.value.split(/[,;\s]+/).map(Number).filter(n => n > 0).sort((a, b) => a - b);
+    ev.target.value = TARIFA.bandas.join(', '); ui.pot = ''; persist(); toast('Rangos guardados');
+  };
+  $('#ttipo').onchange = (ev) => { viewTarifas.tipo = ev.target.value; render(); };
+  document.querySelectorAll('[data-r]').forEach(i => i.onchange = () => {
+    filas[i.dataset.r][i.dataset.c] = parseFloat(i.value) || 0; persist(); toast('Guardado');
+  });
+  document.querySelectorAll('[data-rm]').forEach(b => b.onclick = () => { filas.splice(b.dataset.rm, 1); persist(); render(); });
+  $('#radd').onclick = () => {
+    TARIFA.potencia[sel] = filas;
+    filas.push({ hasta: (filas.length ? Math.max(...filas.map(r => r.hasta)) : 0) + 50, precio: 0 });
+    persist(); render();
+  };
+}
+
+// ---------------- Vista 3: parte ----------------
+function viewParte(e, parteId) {
+  const parte = PARTES.find(x => x.id === parteId);
+  crumbs([{ label: '📁 Equipos', href: '#/' }, { label: e.tag, href: '#/eq/' + e.id }, { label: parte.nombre }]);
+  $('#toolbar').innerHTML = '';
+  const list = novsDe(e.id, parteId);
+  const h = horas(list);
+  const c = getCot(e.id, parteId);
+  const num = (id, label, val) =>
+    `<label>${label}<input type="number" min="0" step="any" id="${id}" value="${val}"></label>`;
+  const opts = partesDe(e);
+
+  $('#app').innerHTML = `
+    <div class="card" style="margin-bottom:16px"><h1 style="margin:0;font-size:20px">${parte.nombre} · ${esc(e.tag)}</h1>${infoBlock(e, false)}</div>
+    <div class="card part-detail">
+      <div class="big">${PART_SVG[parteId]}</div>
+      <div class="form">
+        <div class="section-title">Horas según novedades <span class="hint">(${h.n} registros)</span></div>
+        <label>Horas de ajuste<input value="${hs(h.a)}" disabled></label>
+        <label>Horas de mecanizado<input value="${hs(h.m)}" disabled></label>
+        <label>Horas extra 50%<input value="${hs(h.h50)}" disabled></label>
+        <label>Horas extra 100%<input value="${hs(h.h100)}" disabled></label>
+        <div class="section-title">Cotización</div>
+        ${num('valorAjuste', 'Valor hora ajuste ($)', c.valorAjuste)}
+        ${num('valorMec', 'Valor hora mecanizado ($)', c.valorMec)}
+        ${num('material', 'Material / repuestos ($)', c.material)}
+        ${num('extra', 'Porcentaje extra (%)', c.extra)}
+        <label class="full">Observaciones<textarea id="notas" placeholder="Notas de la cotización...">${esc(c.notas)}</textarea></label>
+        <div class="calc" id="calc"></div>
+        <div class="actions">
+          <button onclick="go('#/eq/${e.id}')">Volver</button>
+          <button class="primary" id="guardar">Guardar</button>
+        </div>
+      </div>
+    </div>
+    <div class="card nov-wrap">
+      <h2>Novedades de ${parte.nombre.toLowerCase()} <span class="hint">— si alguna no corresponde, cambiale la parte</span></h2>
+      ${list.length ? `<table class="nov"><thead><tr>
+          <th>Fecha</th><th>Tipo</th><th>Trabajo</th><th>Operario</th><th>Hs</th><th>50%</th><th>100%</th><th>Parte</th>
+        </tr></thead><tbody>${list.map((n, i) => `<tr>
+          <td>${esc(n.fe)}</td><td><span class="kind">${KIND[n.k]}</span></td><td>${n.ta ? `<b>${esc(n.ta)}</b><br>` : ''}${esc(n.t)}${n.obs ? `<br><span class="hint">${esc(n.obs)}</span>` : ''}</td><td>${esc(n.op)}</td>
+          <td class="n">${n.h || ''}</td><td class="n">${n.h50 || ''}</td><td class="n">${n.h100 || ''}</td>
+          <td><select data-i="${i}">${opts.map(p => `<option value="${p.id}" ${p.id === parteDe(n) ? 'selected' : ''}>${p.nombre}</option>`).join('')}</select></td>
+        </tr>`).join('')}</tbody></table>`
+      : `<div class="empty">No hay novedades asignadas a esta parte.</div>`}
+    </div>`;
+
+  const fields = ['material', 'valorAjuste', 'valorMec', 'extra'];
+  const read = () => {
+    const o = {}; fields.forEach(f => o[f] = parseFloat($('#' + f).value) || 0);
+    o.notas = $('#notas').value; return o;
+  };
+  const updCalc = () => {
+    const p = read(), r = cotizar(h, p);
+    $('#calc').innerHTML = `
+      <div class="row"><span>Ajuste: ${hs(h.a)} × ${money(p.valorAjuste)}</span><span>${money(h.a * p.valorAjuste)}</span></div>
+      <div class="row"><span>Mecanizado: ${hs(h.m)} × ${money(p.valorMec)}</span><span>${money(h.m * p.valorMec)}</span></div>
+      <div class="row"><span>Material / repuestos</span><span>${money(p.material)}</span></div>
+      <div class="row"><span>Subtotal</span><span>${money(r.sub)}</span></div>
+      <div class="row"><span>Extra (${p.extra}%)</span><span>${money(r.recargo)}</span></div>
+      <div class="row final"><span>Precio final cliente</span><span>${money(r.final)}</span></div>`;
+  };
+  fields.forEach(f => $('#' + f).addEventListener('input', updCalc));
+  updCalc();
+  $('#guardar').onclick = () => {
+    store.cot[e.id] = store.cot[e.id] || {};
+    store.cot[e.id][parteId] = read();
+    persist(); toast('Guardado');
+  };
+  document.querySelectorAll('table.nov select').forEach(s => s.onchange = () => {
+    const n = list[s.dataset.i];
+    if (s.value === n.p) delete store.asig[n.sig]; else store.asig[n.sig] = s.value;
+    persist(); toast('Novedad movida'); render();
+  });
+}
+
+$('#sync').onclick = cargar;
+render();
+cargar();
+</script>
+</body>
+</html>
